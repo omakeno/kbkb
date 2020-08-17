@@ -6,18 +6,18 @@ import (
 )
 
 type BashOverwritePrinter struct {
-	row int
+	Row int
 }
 
 func (p *BashOverwritePrinter) Print(out string) {
-	if p.row > 0 {
-		out = "\033[" + fmt.Sprint(p.row) + "A\033[0;K" + out
+	if p.Row > 0 {
+		out = "\033[" + fmt.Sprint(p.Row) + "A\033[0;K" + out
 	}
-	row := strings.Count(out, "\n")
-	if p.row > row {
-		out = strings.Repeat("\033[\n", p.row-row) + out
+	Row := strings.Count(out, "\n")
+	if p.Row > Row {
+		out = strings.Repeat("\033[\n", p.Row-Row) + out
 	} else {
-		p.row = row
+		p.Row = Row
 	}
 	fmt.Print(out)
 }
