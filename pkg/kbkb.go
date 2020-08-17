@@ -108,7 +108,7 @@ func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
 	return KbkbField(kf)
 }
 
-func (kf KbkbField) printAsKbkbOverwrite(p *BashOverwritePrinter) {
+func (kf KbkbField) PrintAsKbkbOverwrite(p *BashOverwritePrinter) {
 	out := strings.Repeat("-", len(kf)+2) + "\n"
 	i := 0
 	for {
@@ -159,7 +159,7 @@ func (kf *KbkbField) GetKbkbPod(x int, y int) *KbkbPod {
 	return nil
 }
 
-func (kf *KbkbField) erasableKbkbPodList(kokeshi int) []*KbkbPod {
+func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
 	if !kf.IsStable() {
 		return nil
 	}

@@ -12,8 +12,8 @@ import (
 func TestKbkb(t *testing.T) {
 	t.Run("success erasableKbkbPodList", func(t *testing.T) {
 		kf := getKbkbField()
-		assert.Equal(t, 7, len(kf.erasableKbkbPodList(3)))
-		assert.Equal(t, 4, len(kf.erasableKbkbPodList(4)))
+		assert.Equal(t, 7, len(kf.ErasableKbkbPodList(3)))
+		assert.Equal(t, 4, len(kf.ErasableKbkbPodList(4)))
 	})
 }
 
