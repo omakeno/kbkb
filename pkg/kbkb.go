@@ -1,7 +1,6 @@
 package kbkb
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -168,12 +167,8 @@ func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
 
 	for x, col := range *kf {
 		for y, _ := range col.kbkbs {
-			fmt.Printf("---------------------------------\n")
-			fmt.Printf("%d : %d checkNeighbors\n", x, y)
-			fmt.Printf("---------------------------------\n")
 			var neighborPods []*KbkbPod
-			neighborPods, checkedPods = kf.getNeighbors(x, y, checkedPods)
-			fmt.Printf("%d found.\n", len(neighborPods))
+			neighborPods, checkedPods = kf.GetNeighbors(x, y, checkedPods)
 			if len(neighborPods) >= kokeshi {
 				erasablePods = append(erasablePods, neighborPods...)
 			}
@@ -182,19 +177,16 @@ func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
 	return erasablePods
 }
 
-func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighborPods, checkedPodsAfter []*KbkbPod) {
+func (kf *KbkbField) GetNeighbors(x int, y int, checkedPods []*KbkbPod) (neighborPods, checkedPodsAfter []*KbkbPod) {
 	p := kf.GetKbkbPod(x, y)
 	neighborPods = []*KbkbPod{p}
 	if contains(checkedPods, p) {
-		fmt.Printf("%d : %d already checked\n", x, y)
 		checkedPodsAfter = checkedPods
 		return
 	}
-	fmt.Printf("%d : %d checking\n", x, y)
 	checkedPodsAfter = append(checkedPods, p)
 
 	if p.Color() == "white" {
-		fmt.Printf("%d : %d white detected\n", x, y)
 		return
 	}
 
@@ -206,9 +198,8 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	}
 	for _, pos := range neighborPos {
 		if np := kf.GetKbkbPod(pos[0], pos[1]); np != nil && !contains(checkedPodsAfter, np) && np.Color() == p.Color() {
-			fmt.Printf("%d : %d detected same color\n", pos[0], pos[1])
 			var neighborPodsHere []*KbkbPod
-			neighborPodsHere, checkedPodsAfter = kf.getNeighbors(pos[0], pos[1], checkedPodsAfter)
+			neighborPodsHere, checkedPodsAfter = kf.GetNeighbors(pos[0], pos[1], checkedPodsAfter)
 			neighborPods = append(neighborPods, neighborPodsHere...)
 		}
 	}

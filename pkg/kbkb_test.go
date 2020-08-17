@@ -232,5 +232,7 @@ func getKbkbField() KbkbField {
 		},
 	}
 	kf := BuildKbkbField([]*v1.Pod{&pod1, &pod2, &pod3, &pod4, &pod5, &pod6, &pod7, &pod8, &pod9}, []*v1.Node{&node1, &node2, &node3})
+	printer := BashOverwritePrinter{Row: 0}
+	kf.PrintAsKbkbOverwrite(&printer)
 	return kf
 }
