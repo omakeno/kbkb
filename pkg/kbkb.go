@@ -67,6 +67,19 @@ func (kc *KbkbCol) Add(p *KbkbPod) {
 
 type KbkbField []*KbkbCol
 
+func BuildKbkbFieldFromList(pl *v1.PodList, nl *v1.NodeList) KbkbField {
+	p := []*v1.Pod{}
+	n := []*v1.Node{}
+	for _, pod := range pl.Items {
+		p = append(p, &pod)
+	}
+	for _, node := range nl.Items {
+		n = append(n, &node)
+	}
+
+	return BuildKbkbField(p, n)
+}
+
 func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
 	var nodes []*v1.Node = make([]*v1.Node, len(n))
 	copy(nodes, n)
