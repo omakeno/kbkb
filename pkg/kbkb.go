@@ -23,7 +23,7 @@ func (ks *KbkbPod) IsStable() bool {
 
 func (ks *KbkbPod) Color() string {
 	var color string = "white"
-	c, ok := ks.ObjectMeta.Annotations["kbkbColor"]
+	c, ok := ks.ObjectMeta.Annotations["k8s.omakenoyouna.net/kbkbColor"]
 	if ok {
 		color = c
 	}
@@ -173,17 +173,12 @@ func (kf *KbkbField) GetKbkbPod(x int, y int) *KbkbPod {
 }
 
 func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
-	if !kf.IsStable() {
-		return nil
-	}
 	checkedPods := []*KbkbPod{}
 	erasablePods := []*KbkbPod{}
 
 	for x, col := range *kf {
-		for y, _ := range col.kbkbs {
-			fmt.Printf("---------------------------------\n")
-			fmt.Printf("%d : %d checkNeighbors\n", x, y)
-			fmt.Printf("---------------------------------\n")
+		for y, p := range col.kbkbs {
+			fmt.Printf("%d : %d : %s checkNeighbors \n", x, y, p.ObjectMeta.Name)
 			var neighborPods []*KbkbPod
 			neighborPods, checkedPods = kf.getNeighbors(x, y, checkedPods)
 			fmt.Printf("%d found.\n", len(neighborPods))
@@ -199,15 +194,15 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	p := kf.GetKbkbPod(x, y)
 	neighborPods = []*KbkbPod{p}
 	if contains(checkedPods, p) {
-		fmt.Printf("%d : %d already checked\n", x, y)
+		fmt.Printf("%d : %d : %s already checked\n", x, y, p.ObjectMeta.Name)
 		checkedPodsAfter = checkedPods
 		return
 	}
-	fmt.Printf("%d : %d checking\n", x, y)
+	fmt.Printf("%d : %d : %s checking\n", x, y, p.ObjectMeta.Name)
 	checkedPodsAfter = append(checkedPods, p)
 
 	if p.Color() == "white" {
-		fmt.Printf("%d : %d white detected\n", x, y)
+		fmt.Printf("%d : %d : %s white detected\n", x, y, p.ObjectMeta.Name)
 		return
 	}
 
@@ -219,7 +214,7 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	}
 	for _, pos := range neighborPos {
 		if np := kf.GetKbkbPod(pos[0], pos[1]); np != nil && !contains(checkedPodsAfter, np) && np.Color() == p.Color() {
-			fmt.Printf("%d : %d detected same color\n", pos[0], pos[1])
+			fmt.Printf("%d : %d : %s detected same color\n", pos[0], pos[1], np.ObjectMeta.Name)
 			var neighborPodsHere []*KbkbPod
 			neighborPodsHere, checkedPodsAfter = kf.getNeighbors(pos[0], pos[1], checkedPodsAfter)
 			neighborPods = append(neighborPods, neighborPodsHere...)
