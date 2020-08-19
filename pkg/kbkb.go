@@ -70,11 +70,13 @@ type KbkbField []*KbkbCol
 func BuildKbkbFieldFromList(pl *v1.PodList, nl *v1.NodeList) KbkbField {
 	p := []*v1.Pod{}
 	n := []*v1.Node{}
-	for _, pod := range pl.Items {
-		p = append(p, &pod)
+
+	for i, l := 0, len(pl.Items); i < l; i++ {
+		p = append(p, &pl.Items[i])
 	}
-	for _, node := range nl.Items {
-		n = append(n, &node)
+
+	for i, l := 0, len(nl.Items); i < l; i++ {
+		n = append(n, &nl.Items[i])
 	}
 
 	return BuildKbkbField(p, n)
@@ -125,7 +127,7 @@ func (kf KbkbField) PrintAsKbkbOverwrite(p *BashOverwritePrinter) {
 	out := strings.Repeat("-", len(kf)+2) + "\n"
 	i := 0
 	for {
-		line := "|"
+		line := fmt.Sprint(i) + "|"
 		empty := true
 		for _, kcol := range kf {
 			if len(kcol.kbkbs) > i {
@@ -177,11 +179,9 @@ func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
 	erasablePods := []*KbkbPod{}
 
 	for x, col := range *kf {
-		for y, p := range col.kbkbs {
-			fmt.Printf("%d : %d : %s checkNeighbors \n", x, y, p.ObjectMeta.Name)
+		for y, _ := range col.kbkbs {
 			var neighborPods []*KbkbPod
 			neighborPods, checkedPods = kf.getNeighbors(x, y, checkedPods)
-			fmt.Printf("%d found.\n", len(neighborPods))
 			if len(neighborPods) >= kokeshi {
 				erasablePods = append(erasablePods, neighborPods...)
 			}
@@ -194,15 +194,12 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	p := kf.GetKbkbPod(x, y)
 	neighborPods = []*KbkbPod{p}
 	if contains(checkedPods, p) {
-		fmt.Printf("%d : %d : %s already checked\n", x, y, p.ObjectMeta.Name)
 		checkedPodsAfter = checkedPods
 		return
 	}
-	fmt.Printf("%d : %d : %s checking\n", x, y, p.ObjectMeta.Name)
 	checkedPodsAfter = append(checkedPods, p)
 
 	if p.Color() == "white" {
-		fmt.Printf("%d : %d : %s white detected\n", x, y, p.ObjectMeta.Name)
 		return
 	}
 
@@ -214,7 +211,6 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	}
 	for _, pos := range neighborPos {
 		if np := kf.GetKbkbPod(pos[0], pos[1]); np != nil && !contains(checkedPodsAfter, np) && np.Color() == p.Color() {
-			fmt.Printf("%d : %d : %s detected same color\n", pos[0], pos[1], np.ObjectMeta.Name)
 			var neighborPodsHere []*KbkbPod
 			neighborPodsHere, checkedPodsAfter = kf.getNeighbors(pos[0], pos[1], checkedPodsAfter)
 			neighborPods = append(neighborPods, neighborPodsHere...)
