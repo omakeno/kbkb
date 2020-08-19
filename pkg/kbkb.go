@@ -1,7 +1,6 @@
 package kbkb
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -127,7 +126,7 @@ func (kf KbkbField) PrintAsKbkbOverwrite(p *BashOverwritePrinter) {
 	out := strings.Repeat("-", len(kf)+2) + "\n"
 	i := 0
 	for {
-		line := fmt.Sprint(i) + "|"
+		line := "|"
 		empty := true
 		for _, kcol := range kf {
 			if len(kcol.kbkbs) > i {
