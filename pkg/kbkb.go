@@ -1,6 +1,8 @@
 package kbkb
 
 import (
+	"fmt"
+	"io"
 	"sort"
 	"strings"
 
@@ -122,7 +124,7 @@ func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
 	return KbkbField(kf)
 }
 
-func (kf KbkbField) PrintAsKbkbOverwrite(p *BashOverwritePrinter) {
+func (kf KbkbField) PrintAsKbkb(w io.Writer) {
 	out := strings.Repeat("-", len(kf)+2) + "\n"
 	i := 0
 	for {
@@ -142,7 +144,7 @@ func (kf KbkbField) PrintAsKbkbOverwrite(p *BashOverwritePrinter) {
 			break
 		}
 	}
-	p.Print(out)
+	fmt.Fprint(w, out)
 }
 
 func (kf *KbkbField) IsStable() bool {
