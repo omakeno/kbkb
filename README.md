@@ -1,6 +1,6 @@
 # kbkb
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/omakeno/bashoverwriter)](https://goreportcard.com/report/github.com/omakeno/bashoverwriter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/omakeno/kbkb)](https://goreportcard.com/report/github.com/omakeno/kbkb)
 
 Library for detecting pods of the same color stuck together.
 
