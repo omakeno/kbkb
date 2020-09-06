@@ -24,7 +24,7 @@ func (ks *KbkbPod) IsStable() bool {
 
 func (ks *KbkbPod) Color() string {
 	var color string = "white"
-	c, ok := ks.ObjectMeta.Annotations["k8s.omakenoyouna.net/kbkbColor"]
+	c, ok := ks.ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
 	if ok {
 		color = c
 	}

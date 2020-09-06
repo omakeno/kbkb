@@ -49,7 +49,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 1, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "red",
+				"kbkb.k8s.omakenoyouna.net/color": "red",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -70,7 +70,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 2, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "red",
+				"kbkb.k8s.omakenoyouna.net/color": "red",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -91,7 +91,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 3, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "red",
+				"kbkb.k8s.omakenoyouna.net/color": "red",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -112,7 +112,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 4, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "blue",
+				"kbkb.k8s.omakenoyouna.net/color": "blue",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -133,7 +133,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 5, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "blue",
+				"kbkb.k8s.omakenoyouna.net/color": "blue",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -154,7 +154,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 6, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "green",
+				"kbkb.k8s.omakenoyouna.net/color": "green",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -175,7 +175,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 7, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "green",
+				"kbkb.k8s.omakenoyouna.net/color": "green",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -196,7 +196,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 8, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "blue",
+				"kbkb.k8s.omakenoyouna.net/color": "blue",
 			},
 		},
 		Spec: v1.PodSpec{
@@ -217,7 +217,7 @@ func getKbkbField() KbkbField {
 				Time: time.Date(2020, time.September, 9, 0, 0, 0, 0, time.UTC),
 			},
 			Annotations: map[string]string{
-				"k8s.omakenoyouna.net/kbkbColor": "blue",
+				"kbkb.k8s.omakenoyouna.net/color": "blue",
 			},
 		},
 		Spec: v1.PodSpec{
