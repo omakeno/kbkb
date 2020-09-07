@@ -9,11 +9,98 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+type KbkbCharSet struct {
+	ColorCodeSet map[string]string
+	Wall         string
+	Floor        string
+	LeftCorner   string
+	RightCorner  string
+	StableIcon   string
+	UnstableIcon string
+	Blank        string
+}
+
+func GetKbkbCharSet() KbkbCharSet {
+	return KbkbCharSet{
+		ColorCodeSet: map[string]string{
+			"red":    "31m",
+			"green":  "32m",
+			"yellow": "33m",
+			"blue":   "34m",
+			"purple": "35m",
+		},
+		Wall:         "|",
+		Floor:        "-",
+		LeftCorner:   "+",
+		RightCorner:  "+",
+		StableIcon:   "@",
+		UnstableIcon: "o",
+		Blank:        " ",
+	}
+}
+
+func GetKbkbCharSetWide() KbkbCharSet {
+	return KbkbCharSet{
+		ColorCodeSet: map[string]string{
+			"red":    "31m",
+			"green":  "32m",
+			"yellow": "33m",
+			"blue":   "34m",
+			"purple": "35m",
+		},
+		Wall:         "|",
+		Floor:        "--",
+		LeftCorner:   "+",
+		RightCorner:  "+",
+		StableIcon:   "●",
+		UnstableIcon: "○",
+		Blank:        "  ",
+	}
+}
+
+func (kcs *KbkbCharSet) KbkbPodColor(kp *KbkbPod) string {
+	colorcode, ok := kcs.ColorCodeSet[kp.Color()]
+	if !ok {
+		colorcode = "00m"
+	}
+
+	var icon string
+	if kp.IsStable() {
+		icon = kcs.StableIcon
+	} else {
+		icon = kcs.UnstableIcon
+	}
+	return "\033[0;" + colorcode + icon + "\033[0m"
+}
+
+func (kcs *KbkbCharSet) PrintKbkb(w io.Writer, kf KbkbField) {
+	out := kcs.LeftCorner + strings.Repeat(kcs.Floor, len(kf)) + kcs.RightCorner + "\n"
+	i := 0
+	for {
+		line := kcs.Wall
+		empty := true
+		for _, kcol := range kf {
+			if len(kcol.kbkbs) > i {
+				line += kcs.KbkbPodColor(kcol.kbkbs[i])
+				empty = false
+			} else {
+				line += kcs.Blank
+			}
+		}
+		out = line + kcs.Wall + "\n" + out
+		i++
+		if empty {
+			break
+		}
+	}
+	fmt.Fprint(w, out)
+}
+
 type KbkbPod v1.Pod
 
-func (ks *KbkbPod) IsStable() bool {
+func (kp *KbkbPod) IsStable() bool {
 	var IsStable bool = true
-	for _, containerStatus := range ks.Status.ContainerStatuses {
+	for _, containerStatus := range kp.Status.ContainerStatuses {
 		if !containerStatus.Ready {
 			IsStable = false
 			break
@@ -22,39 +109,13 @@ func (ks *KbkbPod) IsStable() bool {
 	return IsStable
 }
 
-func (ks *KbkbPod) Color() string {
+func (kp *KbkbPod) Color() string {
 	var color string = "white"
-	c, ok := ks.ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
+	c, ok := kp.ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
 	if ok {
 		color = c
 	}
 	return color
-}
-
-func (ks *KbkbPod) ColoredString() string {
-	var colored string
-	switch ks.Color() {
-	case "red":
-		colored = "\033[0;31m"
-	case "green":
-		colored = "\033[0;32m"
-	case "yellow":
-		colored = "\033[0;33m"
-	case "blue":
-		colored = "\033[0;34m"
-	case "purple":
-		colored = "\033[0;35m"
-	default:
-		colored = ""
-	}
-
-	var icon string
-	if ks.IsStable() {
-		icon = "●"
-	} else {
-		icon = "o"
-	}
-	return colored + icon + "\033[0m"
 }
 
 type KbkbCol struct {
@@ -122,29 +183,6 @@ func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
 	}
 
 	return KbkbField(kf)
-}
-
-func (kf KbkbField) PrintAsKbkb(w io.Writer) {
-	out := strings.Repeat("-", len(kf)+2) + "\n"
-	i := 0
-	for {
-		line := "|"
-		empty := true
-		for _, kcol := range kf {
-			if len(kcol.kbkbs) > i {
-				line += kcol.kbkbs[i].ColoredString()
-				empty = false
-			} else {
-				line += " "
-			}
-		}
-		out = line + "|\n" + out
-		i++
-		if empty {
-			break
-		}
-	}
-	fmt.Fprint(w, out)
 }
 
 func (kf *KbkbField) IsStable() bool {
