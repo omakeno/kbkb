@@ -1,9 +1,6 @@
 package kbkb
 
 import (
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -21,44 +18,6 @@ type KbkbCharSet struct {
 	StableIcon   string
 	UnstableIcon string
 	Blank        string
-}
-
-func GetKbkbCharSet() KbkbCharSet {
-	return KbkbCharSet{
-		ColorCodeSet: map[string]string{
-			"red":    "31m",
-			"green":  "32m",
-			"yellow": "33m",
-			"blue":   "34m",
-			"purple": "35m",
-		},
-		Wall:         "|",
-		Floor:        "-",
-		LeftCorner:   "+",
-		RightCorner:  "+",
-		StableIcon:   "@",
-		UnstableIcon: "o",
-		Blank:        " ",
-	}
-}
-
-func GetKbkbCharSetWide() KbkbCharSet {
-	return KbkbCharSet{
-		ColorCodeSet: map[string]string{
-			"red":    "31m",
-			"green":  "32m",
-			"yellow": "33m",
-			"blue":   "34m",
-			"purple": "35m",
-		},
-		Wall:         "|",
-		Floor:        "--",
-		LeftCorner:   "+",
-		RightCorner:  "+",
-		StableIcon:   "●",
-		UnstableIcon: "○",
-		Blank:        "  ",
-	}
 }
 
 func (kcs *KbkbCharSet) KbkbPodColor(kp KbkbPod) string {
@@ -107,84 +66,6 @@ type KbkbPod interface {
 
 type KbkbPodGenerator interface {
 	Generate(v1.Pod) KbkbPod
-}
-
-type AnnotatedPod struct {
-	V1Pod v1.Pod
-}
-
-func (kp *AnnotatedPod) Pod() v1.Pod {
-	return kp.V1Pod
-}
-
-func (kp *AnnotatedPod) IsStable() bool {
-	var IsStable bool = true
-	for _, containerStatus := range kp.Pod().Status.ContainerStatuses {
-		if !containerStatus.Ready {
-			IsStable = false
-			break
-		}
-	}
-	return IsStable
-}
-
-func (kp *AnnotatedPod) Color() string {
-	var color string = "white"
-	c, ok := kp.Pod().ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
-	if ok {
-		color = c
-	}
-	return color
-}
-
-type AnnotatedPodGenerator struct{}
-
-func (pg *AnnotatedPodGenerator) Generate(p v1.Pod) KbkbPod {
-	return &AnnotatedPod{
-		V1Pod: p,
-	}
-}
-
-type HashedPod struct {
-	V1Pod v1.Pod
-}
-
-func (kp *HashedPod) Pod() v1.Pod {
-	return kp.V1Pod
-}
-
-func (kp *HashedPod) IsStable() bool {
-	var IsStable bool = true
-	for _, containerStatus := range kp.Pod().Status.ContainerStatuses {
-		if !containerStatus.Ready {
-			IsStable = false
-			break
-		}
-	}
-	return IsStable
-}
-
-func (kp *HashedPod) Color() string {
-	colorMap := map[uint16]string{
-		0: "red",
-		1: "green",
-		2: "yellow",
-		3: "blue",
-	}
-
-	bytes, _ := json.Marshal(kp.Pod().ObjectMeta.Labels)
-	bytes256 := sha256.Sum256(bytes)
-	colorInt := binary.BigEndian.Uint16(bytes256[:]) % 4
-
-	return colorMap[colorInt]
-}
-
-type HashedPodGenerator struct{}
-
-func (pg *HashedPodGenerator) Generate(p v1.Pod) KbkbPod {
-	return &HashedPod{
-		V1Pod: p,
-	}
 }
 
 type KbkbCol struct {
