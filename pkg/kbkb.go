@@ -1,6 +1,9 @@
 package kbkb
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -58,7 +61,7 @@ func GetKbkbCharSetWide() KbkbCharSet {
 	}
 }
 
-func (kcs *KbkbCharSet) KbkbPodColor(kp *KbkbPod) string {
+func (kcs *KbkbCharSet) KbkbPodColor(kp KbkbPod) string {
 	colorcode, ok := kcs.ColorCodeSet[kp.Color()]
 	if !ok {
 		colorcode = "00m"
@@ -96,11 +99,27 @@ func (kcs *KbkbCharSet) PrintKbkb(w io.Writer, kf KbkbField) {
 	fmt.Fprint(w, out)
 }
 
-type KbkbPod v1.Pod
+type KbkbPod interface {
+	IsStable() bool
+	Color() string
+	Pod() v1.Pod
+}
 
-func (kp *KbkbPod) IsStable() bool {
+type KbkbPodGenerator interface {
+	Generate(v1.Pod) KbkbPod
+}
+
+type AnnotatedPod struct {
+	V1Pod v1.Pod
+}
+
+func (kp *AnnotatedPod) Pod() v1.Pod {
+	return kp.V1Pod
+}
+
+func (kp *AnnotatedPod) IsStable() bool {
 	var IsStable bool = true
-	for _, containerStatus := range kp.Status.ContainerStatuses {
+	for _, containerStatus := range kp.Pod().Status.ContainerStatuses {
 		if !containerStatus.Ready {
 			IsStable = false
 			break
@@ -109,27 +128,77 @@ func (kp *KbkbPod) IsStable() bool {
 	return IsStable
 }
 
-func (kp *KbkbPod) Color() string {
+func (kp *AnnotatedPod) Color() string {
 	var color string = "white"
-	c, ok := kp.ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
+	c, ok := kp.Pod().ObjectMeta.Annotations["kbkb.k8s.omakenoyouna.net/color"]
 	if ok {
 		color = c
 	}
 	return color
 }
 
-type KbkbCol struct {
-	node  *v1.Node
-	kbkbs []*KbkbPod
+type AnnotatedPodGenerator struct{}
+
+func (pg *AnnotatedPodGenerator) Generate(p v1.Pod) KbkbPod {
+	return &AnnotatedPod{
+		V1Pod: p,
+	}
 }
 
-func (kc *KbkbCol) Add(p *KbkbPod) {
+type HashedPod struct {
+	V1Pod v1.Pod
+}
+
+func (kp *HashedPod) Pod() v1.Pod {
+	return kp.V1Pod
+}
+
+func (kp *HashedPod) IsStable() bool {
+	var IsStable bool = true
+	for _, containerStatus := range kp.Pod().Status.ContainerStatuses {
+		if !containerStatus.Ready {
+			IsStable = false
+			break
+		}
+	}
+	return IsStable
+}
+
+func (kp *HashedPod) Color() string {
+	colorMap := map[uint16]string{
+		0: "red",
+		1: "green",
+		2: "yellow",
+		3: "blue",
+	}
+
+	bytes, _ := json.Marshal(kp.Pod().ObjectMeta.Labels)
+	bytes256 := sha256.Sum256(bytes)
+	colorInt := binary.BigEndian.Uint16(bytes256[:]) % 4
+
+	return colorMap[colorInt]
+}
+
+type HashedPodGenerator struct{}
+
+func (pg *HashedPodGenerator) Generate(p v1.Pod) KbkbPod {
+	return &HashedPod{
+		V1Pod: p,
+	}
+}
+
+type KbkbCol struct {
+	node  v1.Node
+	kbkbs []KbkbPod
+}
+
+func (kc *KbkbCol) Add(p KbkbPod) {
 	kc.kbkbs = append(kc.kbkbs, p)
 }
 
-type KbkbField []*KbkbCol
+type KbkbField []KbkbCol
 
-func BuildKbkbFieldFromList(pl *v1.PodList, nl *v1.NodeList) KbkbField {
+func BuildKbkbFieldFromList(pl *v1.PodList, nl *v1.NodeList, pg KbkbPodGenerator) KbkbField {
 	p := []*v1.Pod{}
 	n := []*v1.Node{}
 
@@ -141,10 +210,10 @@ func BuildKbkbFieldFromList(pl *v1.PodList, nl *v1.NodeList) KbkbField {
 		n = append(n, &nl.Items[i])
 	}
 
-	return BuildKbkbField(p, n)
+	return BuildKbkbField(p, n, pg)
 }
 
-func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
+func BuildKbkbField(p []*v1.Pod, n []*v1.Node, pg KbkbPodGenerator) KbkbField {
 	var nodes []*v1.Node = make([]*v1.Node, len(n))
 	copy(nodes, n)
 	var pods []*v1.Pod = make([]*v1.Pod, len(p))
@@ -165,21 +234,21 @@ func BuildKbkbField(p []*v1.Pod, n []*v1.Node) KbkbField {
 		}
 	})
 
-	var kf []*KbkbCol
-	kf = make([]*KbkbCol, len(nodes))
+	var kf []KbkbCol
+	kf = make([]KbkbCol, len(nodes))
 
 	nodenameToIndex := map[string]int{}
 	for i, node := range nodes {
 		nodenameToIndex[node.Name] = i
-		kf[i] = &KbkbCol{
-			node:  node,
-			kbkbs: []*KbkbPod{},
+		kf[i] = KbkbCol{
+			node:  *node,
+			kbkbs: []KbkbPod{},
 		}
 	}
 
 	for _, pod := range pods {
-		kpod := KbkbPod(*pod)
-		kf[nodenameToIndex[pod.Spec.NodeName]].Add(&kpod)
+		kpod := pg.Generate(*pod)
+		kf[nodenameToIndex[pod.Spec.NodeName]].Add(kpod)
 	}
 
 	return KbkbField(kf)
@@ -201,7 +270,7 @@ func (kf *KbkbField) IsStable() bool {
 	return isStable
 }
 
-func (kf *KbkbField) GetKbkbPod(x int, y int) *KbkbPod {
+func (kf *KbkbField) GetKbkbPod(x int, y int) KbkbPod {
 	if x < 0 || y < 0 {
 		return nil
 	}
@@ -213,13 +282,13 @@ func (kf *KbkbField) GetKbkbPod(x int, y int) *KbkbPod {
 	return nil
 }
 
-func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
-	checkedPods := []*KbkbPod{}
-	erasablePods := []*KbkbPod{}
+func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []KbkbPod {
+	checkedPods := []KbkbPod{}
+	erasablePods := []KbkbPod{}
 
 	for x, col := range *kf {
 		for y, _ := range col.kbkbs {
-			var neighborPods []*KbkbPod
+			var neighborPods []KbkbPod
 			neighborPods, checkedPods = kf.getNeighbors(x, y, checkedPods)
 			if len(neighborPods) >= kokeshi {
 				erasablePods = append(erasablePods, neighborPods...)
@@ -229,9 +298,9 @@ func (kf *KbkbField) ErasableKbkbPodList(kokeshi int) []*KbkbPod {
 	return erasablePods
 }
 
-func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighborPods, checkedPodsAfter []*KbkbPod) {
+func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []KbkbPod) (neighborPods, checkedPodsAfter []KbkbPod) {
 	p := kf.GetKbkbPod(x, y)
-	neighborPods = []*KbkbPod{p}
+	neighborPods = []KbkbPod{p}
 	if contains(checkedPods, p) {
 		checkedPodsAfter = checkedPods
 		return
@@ -250,7 +319,7 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	}
 	for _, pos := range neighborPos {
 		if np := kf.GetKbkbPod(pos[0], pos[1]); np != nil && !contains(checkedPodsAfter, np) && np.Color() == p.Color() {
-			var neighborPodsHere []*KbkbPod
+			var neighborPodsHere []KbkbPod
 			neighborPodsHere, checkedPodsAfter = kf.getNeighbors(pos[0], pos[1], checkedPodsAfter)
 			neighborPods = append(neighborPods, neighborPodsHere...)
 		}
@@ -258,7 +327,7 @@ func (kf *KbkbField) getNeighbors(x int, y int, checkedPods []*KbkbPod) (neighbo
 	return
 }
 
-func contains(pods []*KbkbPod, p *KbkbPod) bool {
+func contains(pods []KbkbPod, p KbkbPod) bool {
 	contains := false
 	for _, pod := range pods {
 		if pod == p {
