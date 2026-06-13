@@ -1,0 +1,154 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.21.0
+  name: kbkbs.k8s.omakenoyouna.net
+spec:
+  group: k8s.omakenoyouna.net
+  names:
+    kind: Kbkb
+    listKind: KbkbList
+    plural: kbkbs
+    singular: kbkb
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.kokeshi
+      name: Kokeshi
+      type: integer
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.chain
+      name: Chain
+      type: integer
+    - jsonPath: .status.maxChain
+      name: MaxChain
+      type: integer
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: Kbkb is the Schema for the kbkbs API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: KbkbSpec defines the desired state of Kbkb.
+            properties:
+              excludeControlPlane:
+                description: ExcludeControlPlane removes control-plane nodes from
+                  the field.
+                type: boolean
+              kokeshi:
+                default: 4
+                description: Kokeshi is the number of adjacent same-colored Pods required
+                  to erase.
+                minimum: 2
+                type: integer
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                description: |-
+                  NodeSelector limits which nodes form the field columns; empty means
+                  every node plays.
+                type: object
+              spawn:
+                description: Spawn configures automatic Pod-pair generation (the "next
+                  puyo" feed).
+                properties:
+                  disableGameOver:
+                    description: |-
+                      DisableGameOver keeps spawning even when a column reaches MaxHeight
+                      (endless mode). The scheduler still refuses to drop onto full columns.
+                    type: boolean
+                  enabled:
+                    description: Enabled turns automatic spawning on.
+                    type: boolean
+                  image:
+                    default: registry.k8s.io/pause:3.10
+                    description: Image is the container image of spawned Pods.
+                    type: string
+                  maxHeight:
+                    default: 12
+                    description: MaxHeight is the column height limit; reaching it
+                      ends the game.
+                    minimum: 1
+                    type: integer
+                  pair:
+                    default: 2
+                    description: Pair is the number of Pods generated at once.
+                    minimum: 1
+                    type: integer
+                  schedulerName:
+                    default: kbkb-scheduler
+                    description: |-
+                      SchedulerName is set on spawned Pods so that the kbkb scheduler picks
+                      them up.
+                    type: string
+                required:
+                - enabled
+                type: object
+              versus:
+                description: |-
+                  Versus configures the battle mode: chains send garbage (white) Pods to
+                  the opponent namespace.
+                properties:
+                  garbageRate:
+                    default: 2
+                    description: |-
+                      GarbageRate is how many erased Pods produce one garbage Pod
+                      (garbage = erased / garbageRate).
+                    minimum: 1
+                    type: integer
+                  opponentNamespace:
+                    description: OpponentNamespace receives garbage Pods when this
+                      Kbkb erases Pods.
+                    minLength: 1
+                    type: string
+                required:
+                - opponentNamespace
+                type: object
+            type: object
+          status:
+            description: KbkbStatus defines the observed state of Kbkb.
+            properties:
+              allClears:
+                description: AllClears is the number of times the field was completely
+                  emptied.
+                type: integer
+              chain:
+                description: Chain is the length of the chain currently in progress.
+                type: integer
+              maxChain:
+                description: MaxChain is the longest chain achieved so far. The goal
+                  is 19.
+                type: integer
+              phase:
+                description: 'Phase is the current game phase: Idle, Erasing or GameOver.'
+                type: string
+              totalErased:
+                description: TotalErased is the total number of erased Pods.
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

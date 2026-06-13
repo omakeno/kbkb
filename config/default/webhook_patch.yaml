@@ -1,0 +1,16 @@
+# Inject the cert-manager CA and narrow the webhook to kbkb-managed Pods so
+# that ordinary workloads are never mutated.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: mutating-webhook-configuration
+  annotations:
+    cert-manager.io/inject-ca-from: kbkb-system/kbkb-serving-cert
+webhooks:
+- name: color.kbkb.k8s.omakenoyouna.net
+  objectSelector:
+    matchLabels:
+      kbkb.k8s.omakenoyouna.net/managed: "true"
+  clientConfig:
+    service:
+      namespace: kbkb-system

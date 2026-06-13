@@ -1,0 +1,14 @@
+# Single-player game in the default namespace.
+apiVersion: k8s.omakenoyouna.net/v1beta1
+kind: Kbkb
+metadata:
+  name: kbkb-sample
+  namespace: default
+spec:
+  kokeshi: 4
+  spawn:
+    enabled: true
+    pair: 2
+    image: registry.k8s.io/pause:3.10
+    schedulerName: kbkb-scheduler
+    maxHeight: 12

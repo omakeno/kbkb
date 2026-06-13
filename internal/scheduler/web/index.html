@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>くべくべ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>くべくべ <span class="sub">kbkb</span></h1>
+    <div id="stats">
+      <span class="stat">namespace: <b id="namespace">-</b></span>
+      <span class="stat">chain: <b id="chain">0</b></span>
+      <span class="stat">max chain: <b id="maxChain">0</b></span>
+      <span class="stat">erased: <b id="totalErased">0</b></span>
+      <span class="stat">all clear: <b id="allClears">0</b></span>
+      <span class="stat">phase: <b id="phase">-</b></span>
+    </div>
+    <button id="modeBtn">mode: manual</button>
+  </header>
+
+  <main>
+    <section id="board">
+      <div id="banner" class="hidden"></div>
+      <div id="grid"></div>
+      <div id="nodes"></div>
+    </section>
+    <aside>
+      <h2>NEXT</h2>
+      <div id="next"></div>
+      <div id="help">
+        <p>← → : 移動</p>
+        <p>Z / X : 左回転 / 右回転</p>
+        <p>↓ : ソフトドロップ(接地中に↓で固定)</p>
+        <p>↑ / Space : ハードドロップ</p>
+        <p>白枠 = 軸ぷよ</p>
+      </div>
+      <p id="message"></p>
+    </aside>
+  </main>
+
+  <div id="tooltip" class="hidden"></div>
+  <section id="eventlog">
+    <h2>Pod Events</h2>
+    <ul id="events"></ul>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

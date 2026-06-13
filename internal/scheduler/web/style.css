@@ -1,0 +1,172 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Segoe UI", "Hiragino Sans", sans-serif;
+  background: #1b1e2b;
+  color: #eee;
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.8rem 1.2rem;
+  background: #12141d;
+}
+
+h1 { font-size: 1.3rem; }
+h1 .sub { font-size: 0.8rem; color: #888; }
+
+#stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+.stat { font-size: 0.85rem; color: #aaa; }
+.stat b { color: #fff; }
+
+#modeBtn {
+  margin-left: auto;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #2a2e40;
+  color: #eee;
+  cursor: pointer;
+}
+#modeBtn:hover { background: #3a3f57; }
+
+main {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+#board { position: relative; }
+
+#grid {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  background: #12141d;
+  border: 2px solid #3a3f57;
+  border-radius: 8px;
+}
+
+.cell {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #20243380;
+}
+.cell.sky { background: transparent; }
+
+.cell.red    { background: #e74c3c; }
+.cell.green  { background: #2ecc71; }
+.cell.yellow { background: #f1c40f; }
+.cell.blue   { background: #3498db; }
+.cell.purple { background: #9b59b6; }
+.cell.white  { background: #ecf0f1; }
+.cell.unstable { opacity: 0.45; }
+.cell.ghost { opacity: 0.85; box-shadow: 0 0 10px #fff8; }
+.cell.pivot { outline: 2px solid #fff; outline-offset: -2px; }
+.cell.ojama { border: 2px dashed #999; }
+
+#nodes {
+  display: grid;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  color: #888;
+  text-align: center;
+  word-break: break-all;
+}
+
+aside { width: 220px; }
+aside h2 { font-size: 1rem; color: #aaa; margin-bottom: 0.5rem; }
+
+#next { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.2rem; }
+#next .cell { width: 30px; height: 30px; }
+
+#help { font-size: 0.85rem; color: #777; line-height: 1.7; }
+#message { margin-top: 1rem; font-size: 0.9rem; color: #f39c12; min-height: 2em; }
+
+#banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: bold;
+  z-index: 10;
+  border-radius: 8px;
+  background: #000a;
+  text-shadow: 0 0 12px currentColor;
+}
+#banner.allclear { color: #2ecc71; animation: pop 0.4s ease; }
+#banner.gameover { color: #e74c3c; }
+#banner.chain { color: #f1c40f; animation: pop 0.3s ease; background: transparent; pointer-events: none; }
+#banner.hidden { display: none; }
+
+@keyframes pop {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+#tooltip {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  background: #0c0e15f0;
+  border: 1px solid #3a3f57;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #ddd;
+  white-space: pre;
+}
+#tooltip.hidden { display: none; }
+#tooltip .k { color: #7a82a8; }
+
+#eventlog {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  width: 360px;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: #12141df0;
+  border: 1px solid #3a3f57;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  z-index: 20;
+}
+#eventlog h2 {
+  font-size: 0.8rem;
+  color: #7a82a8;
+  margin-bottom: 0.4rem;
+}
+#events {
+  list-style: none;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 0.72rem;
+  line-height: 1.7;
+  color: #ccc;
+}
+#events li { display: flex; align-items: baseline; gap: 6px; animation: pop 0.2s ease; }
+#events .dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  flex-shrink: 0; align-self: center;
+  background: #555;
+}
+#events .dot.red    { background: #e74c3c; }
+#events .dot.green  { background: #2ecc71; }
+#events .dot.yellow { background: #f1c40f; }
+#events .dot.blue   { background: #3498db; }
+#events .dot.purple { background: #9b59b6; }
+#events .dot.white  { background: #ecf0f1; }
+#events .t { color: #666; }
+#events .deleted { color: #e74c3c; }
+#events .terminating { color: #f39c12; }
+#events .running { color: #2ecc71; }

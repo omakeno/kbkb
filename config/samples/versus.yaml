@@ -1,0 +1,37 @@
+# Battle mode: chains in player1 send white garbage Pods to player2 and vice
+# versa. Run one scheduler per namespace (--namespace=player1 / player2).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: player1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: player2
+---
+apiVersion: k8s.omakenoyouna.net/v1beta1
+kind: Kbkb
+metadata:
+  name: kbkb
+  namespace: player1
+spec:
+  kokeshi: 4
+  spawn:
+    enabled: true
+  versus:
+    opponentNamespace: player2
+    garbageRate: 2
+---
+apiVersion: k8s.omakenoyouna.net/v1beta1
+kind: Kbkb
+metadata:
+  name: kbkb
+  namespace: player2
+spec:
+  kokeshi: 4
+  spawn:
+    enabled: true
+  versus:
+    opponentNamespace: player1
+    garbageRate: 2

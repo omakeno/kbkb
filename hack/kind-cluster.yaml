@@ -1,0 +1,10 @@
+# 1 control-plane + 4 workers: the kbkb field gets 5 columns.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kbkb
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker
+- role: worker

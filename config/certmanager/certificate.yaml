@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-issuer
+  namespace: system
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: serving-cert
+  namespace: system
+spec:
+  # must match the prefixed webhook service name and the deploy namespace
+  dnsNames:
+  - kbkb-webhook-service.kbkb-system.svc
+  - kbkb-webhook-service.kbkb-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: kbkb-selfsigned-issuer
+  secretName: webhook-server-cert

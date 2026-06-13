@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# all resources land in kbkb-system with a kbkb- prefix
+namespace: kbkb-system
+namePrefix: kbkb-
+
+resources:
+- namespace.yaml
+- ../crd
+- ../rbac
+- ../manager
+- ../webhook
+- ../certmanager
+- ../scheduler
+
+patches:
+- path: webhook_patch.yaml
