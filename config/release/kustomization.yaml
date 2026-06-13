@@ -1,0 +1,12 @@
+# Renders the single-file installer (install/kbkb.yaml) with released images.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../default
+images:
+- name: kbkb-manager
+  newName: ghcr.io/omakeno/kbkb-manager
+  newTag: v2.0.0
+- name: kbkb-scheduler
+  newName: ghcr.io/omakeno/kbkb-scheduler
+  newTag: v2.0.0

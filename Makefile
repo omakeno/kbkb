@@ -1,5 +1,7 @@
 IMG_MANAGER ?= kbkb-manager:latest
 IMG_SCHEDULER ?= kbkb-scheduler:latest
+VERSION ?= v2.0.0
+REGISTRY ?= ghcr.io/omakeno
 
 .PHONY: all
 all: generate manifests fmt vet test build
@@ -39,6 +41,17 @@ build: ## build all binaries into bin/
 docker-build: ## build the manager and scheduler images
 	docker build --build-arg CMD=manager -t $(IMG_MANAGER) .
 	docker build --build-arg CMD=scheduler -t $(IMG_SCHEDULER) .
+
+.PHONY: docker-release
+docker-release: docker-build ## tag and push release images
+	docker tag $(IMG_MANAGER) $(REGISTRY)/kbkb-manager:$(VERSION)
+	docker tag $(IMG_SCHEDULER) $(REGISTRY)/kbkb-scheduler:$(VERSION)
+	docker push $(REGISTRY)/kbkb-manager:$(VERSION)
+	docker push $(REGISTRY)/kbkb-scheduler:$(VERSION)
+
+.PHONY: installer
+installer: manifests ## render the single-file installer
+	go run sigs.k8s.io/kustomize/kustomize/v5@latest build config/release > install/kbkb.yaml
 
 ##@ Deployment
 
