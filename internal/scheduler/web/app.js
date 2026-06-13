@@ -1,4 +1,4 @@
-// くべくべ web UI: the operating pair lives entirely in the browser and falls
+// kbkb web UI: the operating pair lives entirely in the browser and falls
 // through the grid like real puyo; only the final lock is sent to the
 // scheduler, which binds the two Pods to nodes.
 "use strict";
@@ -53,7 +53,7 @@ function phaseClass(phase) {
 
 function logEvent(color, name, html) {
   const li = document.createElement("li");
-  const t = new Date().toLocaleTimeString("ja-JP", { hour12: false });
+  const t = new Date().toLocaleTimeString("en-GB", { hour12: false });
   li.innerHTML =
     `<span class="dot ${color}"></span>` +
     `<span><span class="t">${t}</span> <b>${name}</b> ${html}</span>`;
@@ -320,9 +320,9 @@ function render() {
   if (state.phase === "GameOver") {
     showBanner("GAME OVER", "gameover", 0);
   } else if (prevAllClears !== null && state.allClears > prevAllClears) {
-    showBanner("全消し!!", "allclear", 2500);
+    showBanner("ALL CLEAR!!", "allclear", 2500);
   } else if (state.chain > 1 && state.chain > prevChain) {
-    showBanner(state.chain + "連鎖!", "chain", 1500);
+    showBanner(state.chain + "-CHAIN!", "chain", 1500);
   } else if (banner.classList.contains("gameover")) {
     banner.className = "hidden";
   }
@@ -383,7 +383,7 @@ function connect() {
   };
   es.onerror = () => {
     es.close();
-    message.textContent = "再接続中…";
+    message.textContent = "reconnecting…";
     setTimeout(connect, 2000);
   };
 }

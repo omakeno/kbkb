@@ -1,59 +1,61 @@
-# くべくべ (kbkb) v2
+# kbkb v2
 
-Kubernetes 上でぷよぷよを再現するカオスエンジニアリング(?)ツール。
-Node を列、Pod をぷよとして、同じ色の Pod が 4 個隣接すると自動削除されます。
+Puyo Puyo on Kubernetes — a chaos-engineering(?) toy.
+Nodes are columns, Pods are puyos: when four same-colored Pods become
+adjacent, they are automatically deleted.
 
 ![play](docs/play.gif)
 
-WebUI からペアを移動・回転・ドロップして配置(=カスタムスケジューラーが Pod を Node にバインド)。
-4 個つながると消去コントローラーが Pod を削除し、右下の Pod Events に
-`Running → Terminating → deleted` の遷移が流れます。上の GIF では 2 連鎖が発生しています。
+Move, rotate and drop the pair from the web UI (the custom scheduler binds the
+Pods to Nodes). When four connect, the erase controller deletes the Pods and
+the Pod Events panel shows the `Running → Terminating → deleted` transitions.
+The GIF above ends with a 2-chain.
 
-旧 3 リポジトリ([kbkb](https://github.com/omakeno/kbkb) /
-[kbkb-controller](https://github.com/omakeno/kbkb-controller) /
-[kubectl-kbkb](https://github.com/omakeno/kubectl-kbkb))を
-単一モノレポにリファクタリングし、バックログだった「ゲームループ」一式
-(Pod 生成・ランダム色付け・2 個ずつ操作するスケジューラー)を実装したものです。
-目標は **19 連鎖**。
+This is a rewrite of the original three repos
+([kbkb](https://github.com/omakeno/kbkb/tree/454afca) /
+kbkb-controller / kubectl-kbkb) as a single monorepo, plus the
+long-standing backlog: the full game loop (Pod spawning, random coloring,
+and a scheduler that operates queued Pods two at a time).
+The goal is a **19-chain**.
 
-## アーキテクチャ
+## Architecture
 
 ```
-                 ┌──────────────────────────────────────────────┐
-                 │ kbkb-manager                                  │
-  Kbkb CR ──────▶│  ├ 消去コントローラー: 4個隣接で削除・連鎖計測 │
-                 │  ├ Spawnコントローラー: 安定したらペアを生成   │
-                 │  └ Webhook: 生成Podにランダムに色を付与        │
-                 └──────────────────────────────────────────────┘
+                 ┌─────────────────────────────────────────────────┐
+                 │ kbkb-manager                                     │
+  Kbkb CR ──────▶│  ├ erase controller: delete 4+ adjacency, chains │
+                 │  ├ spawn controller: feed a pair once stable     │
+                 │  └ webhook: random color for spawned pods        │
+                 └─────────────────────────────────────────────────┘
                           │ spawn (schedulerName: kbkb-scheduler)
                           ▼
-                 ┌──────────────────────────────────────────────┐
-   ブラウザ ◀───▶│ kbkb-scheduler (ゲームサーバー)               │
-   ←→↑Space      │  ├ WebUI: 移動・回転・ドロップ / SSEで状態配信 │
-                 │  └ ペアを2個ずつ Binding APIでNode(列)へ配置  │
-                 └──────────────────────────────────────────────┘
+                 ┌─────────────────────────────────────────────────┐
+   browser ◀───▶│ kbkb-scheduler (game server)                     │
+   ←→ Z X ↓ ↑    │  ├ web UI: move/rotate/drop, SSE state stream    │
+                 │  └ binds pairs to nodes via the Binding API      │
+                 └─────────────────────────────────────────────────┘
 ```
 
-ゲームループ:
-**Spawn**(2個生成)→ **Webhook**(ランダム色付け)→ **Scheduler**(プレイヤーが列に配置)
-→ Running/Ready → 4個隣接で**消去** → 再安定後また消えれば**連鎖++** → 次のSpawn → …
-→ 列が `maxHeight` を超えたら **GameOver**。
+The game loop: **spawn** (2 Pods) → **webhook** (random colors) →
+**scheduler** (the player places them on columns) → Running/Ready →
+**erase** on 4+ adjacency → further erases extend the **chain** → next spawn
+→ … → **game over** when a column exceeds `maxHeight`.
 
-## 構成
+## Layout
 
-| パス | 内容 |
+| Path | Contents |
 |---|---|
-| `pkg/field` | コアロジック: フィールド構築・隣接グループ判定(反復DFS) |
-| `pkg/printer` | ターミナル描画(ANSI上書き出力を内蔵) |
-| `api/v1beta1` | `Kbkb` CRD |
-| `internal/controller` | 消去コントローラー / Spawnコントローラー |
-| `internal/webhook` | Pod色付け Mutating Webhook |
-| `internal/scheduler` | カスタムスケジューラー + WebUI(`go:embed`) |
-| `internal/cli` | kubectl プラグイン |
-| `cmd/{manager,scheduler,kubectl-kbkb}` | 各バイナリ |
-| `config/` | CRD / RBAC / Deployment / cert-manager(kustomize) |
+| `pkg/field` | core logic: field assembly, adjacency groups (iterative DFS) |
+| `pkg/printer` | terminal rendering with in-place ANSI redraws |
+| `api/v1beta1` | the `Kbkb` CRD |
+| `internal/controller` | erase controller / spawn controller |
+| `internal/webhook` | pod-coloring mutating webhook |
+| `internal/scheduler` | custom scheduler + web UI (`go:embed`) |
+| `internal/cli` | the kubectl plugin |
+| `cmd/{manager,scheduler,kubectl-kbkb}` | binaries |
+| `config/` | CRD / RBAC / deployments / cert-manager (kustomize) |
 
-## Kbkb CRD
+## The Kbkb CRD
 
 ```yaml
 apiVersion: k8s.omakenoyouna.net/v1beta1
@@ -61,111 +63,115 @@ kind: Kbkb
 metadata:
   name: kbkb-sample
 spec:
-  kokeshi: 4              # 何個隣接で消すか(2個消し・6個消しも可)
-  excludeControlPlane: true  # control-planeノードを列から除外(任意)
-  nodeSelector:           # ラベルが一致するノードだけを列にする(任意)
+  kokeshi: 4                 # adjacency size required to erase
+  excludeControlPlane: true  # drop control-plane nodes from the field (optional)
+  nodeSelector:              # only matching nodes become columns (optional)
     kbkb: "true"
   spawn:
-    enabled: true         # 全PodがReadyになったらPodを生成
-    pair: 2               # 一度に生成する数
+    enabled: true            # spawn a pair once every pod is Ready
+    pair: 2                  # pods per spawn
     image: registry.k8s.io/pause:3.10
     schedulerName: kbkb-scheduler
-    maxHeight: 12         # 列の高さ制限。超えたらGameOver
-    disableGameOver: true # エンドレスモード: 高さ制限でもゲームを止めない(任意)
-  versus:                 # 対戦モード(任意)
+    maxHeight: 12            # column height limit; reaching it ends the game
+    disableGameOver: true    # endless mode (optional)
+  versus:                    # battle mode (optional)
     opponentNamespace: player2
-    garbageRate: 2        # 消した数÷この値のおじゃまPodを相手に送る
+    garbageRate: 2           # send (erased / rate) garbage pods to the opponent
 status:
-  phase: Idle             # Idle / Erasing / GameOver
-  chain: 0                # 進行中の連鎖数
-  maxChain: 7             # 最高連鎖(目標19)
+  phase: Idle                # Idle / Erasing / GameOver
+  chain: 0                   # chain currently in progress
+  maxChain: 7                # longest chain so far — aim for 19
   totalErased: 84
-  allClears: 1            # 全消し回数
+  allClears: 1               # times the field was completely emptied
 ```
 
-色は Pod のアノテーション `kbkb.k8s.omakenoyouna.net/color`
-(red / green / yellow / blue / purple)。色なし・white は消えず、巻き込まれません。
-おじゃまPod(白)はラベル `kbkb.k8s.omakenoyouna.net/ojama=true` 付きで生成され、
-スケジューラーがペアを経由せず即落下させます。
+Colors come from the Pod annotation `kbkb.k8s.omakenoyouna.net/color`
+(red / green / yellow / blue / purple). Uncolored and white Pods never erase
+and never join a group. Garbage ("ojama") Pods are white, carry the
+`kbkb.k8s.omakenoyouna.net/ojama=true` label, and the scheduler drops them
+onto random columns immediately instead of queueing them.
 
-## 遊び方
+## Playing
 
 ```bash
-# 1. CRDと一式をデプロイ(cert-manager が必要)
+# 1. deploy everything (cert-manager required)
 make install
-make docker-build deploy   # kind なら: kind load docker-image kbkb-manager:latest kbkb-scheduler:latest
+make docker-build deploy   # on kind: kind load docker-image kbkb-manager:latest kbkb-scheduler:latest
 
-# 2. ゲーム開始
+# 2. start a game
 kubectl apply -f config/samples/kbkb.yaml
 
-# 3. WebUIを開いて操作
+# 3. open the web UI and play
 kubectl -n kbkb-system port-forward svc/kbkb-scheduler-ui 8765:8765
-# → http://localhost:8765  (←→: 移動, ↑/X: 回転, Space: ドロップ)
+# → http://localhost:8765  (←→ move, Z/X rotate, ↓ soft drop, ↑ hard drop)
 ```
 
-ローカル実行(クラスタ外)も可能です:
+Running outside the cluster also works:
 
 ```bash
-make run-manager     # Webhook無効で起動(色は手動アノテーション)
-make run-scheduler   # http://localhost:8765 でUI
+make run-manager     # webhook disabled (no certs); color pods by hand
+make run-scheduler   # serves the UI on http://localhost:8765
 ```
 
-### kubectl プラグイン
+### The kubectl plugin
 
 ```bash
 go build -o ~/bin/kubectl-kbkb ./cmd/kubectl-kbkb
-kubectl kbkb            # 現在のnamespaceを表示
-kubectl kbkb -w         # watch
-kubectl kbkb -L         # 大きい表示
-kubectl kbkb --demo     # labelハッシュで色付け(既存クラスタのデモ用)
-kubectl kbkb --exclude-control-plane  # control-plane列を非表示
+kubectl kbkb                          # render the current namespace
+kubectl kbkb -w                       # watch
+kubectl kbkb -L                       # large glyphs
+kubectl kbkb --demo                   # color pods by label hash (for existing clusters)
+kubectl kbkb --exclude-control-plane  # hide control-plane columns
 ```
 
-### 対戦モード
+### Versus mode
 
 ```bash
 kubectl apply -f config/samples/versus.yaml
-# プレイヤーごとにスケジューラーを起動
+# one scheduler per player
 go run ./cmd/scheduler --namespace=player1 --listen=:8765
 go run ./cmd/scheduler --namespace=player2 --listen=:8766
 ```
 
-連鎖するたびに `消した数 ÷ garbageRate` 個の白おじゃまPodが相手のフィールドに降ります。
+Every chain sends `erased / garbageRate` white garbage Pods raining onto the
+opponent's field.
 
-## メトリクス
+## Metrics
 
-manager の `/metrics`(:8080)で公開:
+Exposed on the manager's `/metrics` (:8080):
 
-- `kbkb_chain_current` / `kbkb_max_chain` — 連鎖数(Grafanaで19連鎖を観測しましょう)
+- `kbkb_chain_current` / `kbkb_max_chain` — watch your chains in Grafana
 - `kbkb_erased_pods_total` / `kbkb_spawned_pods_total`
 - `kbkb_all_clear_total` / `kbkb_ojama_sent_total` / `kbkb_game_over`
 
-## v1 からの主な変更
+## Changes since v1
 
-- 3リポジトリ + 共通ライブラリ → 単一モジュール `github.com/omakeno/kbkb/v2`
+- three repos + a shared library → a single module `github.com/omakeno/kbkb/v2`
 - Go 1.13 / controller-runtime v0.6 → Go 1.26 / controller-runtime v0.24
-- 隣接判定: 再帰DFS + O(n²)スライス探索 → visited配列 + 反復DFS
-- バグ修正: 未スケジュールPodが先頭Nodeの列に積まれていた / Terminating中のPodが安定扱いだった
-- `bashoverwriter` 依存 → 数行のANSI実装(`printer.Overwriter`)
-- kubectl プラグインは `cli-runtime` 採用(`-n`/`--context`等が標準動作)
-- Pod の積み順: 作成順 → スケジューラーが付与する `drop-order` アノテーション順
-  (回転操作で上下を入れ替えられるようにするため)
-- バックログ実装: Spawnコントローラー / 色付けWebhook / 2個ずつ操作するスケジューラー
-- 追加: WebUI操作・連鎖/全消し/GameOver判定・対戦モード・Prometheusメトリクス
+- adjacency search: recursive DFS with O(n²) slice scans → visited matrix + iterative DFS
+- bug fixes: unscheduled Pods landed in the first node's column; terminating
+  Pods counted as stable
+- the `bashoverwriter` dependency → a few lines of ANSI (`printer.Overwriter`)
+- the kubectl plugin uses `cli-runtime` (standard `-n`/`--context` behavior)
+- stacking order: creation time → the scheduler's `drop-order` annotation
+  (so a rotated pair lands the way the player chose)
+- backlog implemented: spawn controller / coloring webhook / pair-wise scheduler
+- new: web UI play, chain & all-clear & game-over tracking, versus mode,
+  Prometheus metrics
 
-## 開発
+## Development
 
 ```bash
 make            # generate + manifests + fmt + vet + test + build
 make test
-make manifests  # controller-gen で CRD/RBAC/Webhook を再生成
+make manifests  # regenerate CRD/RBAC/webhook via controller-gen
 ```
 
-デモGIF(`docs/play.gif`)は `hack/record/` で再生成できます
-(headless Chrome をDockerで起動し、キー操作をスクリプトしてGo標準ライブラリでGIF化):
+The demo GIF (`docs/play.gif`) is reproducible from `hack/record/`: it drives
+a headless Chrome in Docker with scripted key presses and encodes the GIF with
+nothing but the Go standard library:
 
 ```bash
-docker run -d --rm --name kbkb-cdp -p 9222:9222 \
-  -v $PWD/hack/record/fonts:/usr/share/fonts/noto:ro chromedp/headless-shell
-cd hack/record && go run .   # 別シェルで ./stage-chain.sh を流すと連鎖シーンが入る
+docker run -d --rm --name kbkb-cdp -p 9222:9222 chromedp/headless-shell
+cd hack/record && go run .   # run ./stage-chain.sh in another shell for a chain scene
 ```

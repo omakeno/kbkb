@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>くべくべ</title>
+  <title>kbkb</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
-    <h1>くべくべ <span class="sub">kbkb</span></h1>
+    <h1>kbkb <span class="sub">puyo puyo on kubernetes</span></h1>
     <div id="stats">
       <span class="stat">namespace: <b id="namespace">-</b></span>
       <span class="stat">chain: <b id="chain">0</b></span>
@@ -30,11 +30,11 @@
       <h2>NEXT</h2>
       <div id="next"></div>
       <div id="help">
-        <p>← → : 移動</p>
-        <p>Z / X : 左回転 / 右回転</p>
-        <p>↓ : ソフトドロップ(接地中に↓で固定)</p>
-        <p>↑ / Space : ハードドロップ</p>
-        <p>白枠 = 軸ぷよ</p>
+        <p>&larr; &rarr; : move</p>
+        <p>Z / X : rotate left / right</p>
+        <p>&darr; : soft drop (again to lock)</p>
+        <p>&uarr; / Space : hard drop</p>
+        <p>white ring = axis puyo</p>
       </div>
       <p id="message"></p>
     </aside>

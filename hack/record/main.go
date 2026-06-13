@@ -45,7 +45,7 @@ func main() {
 	); err != nil {
 		panic(err)
 	}
-	if title != "くべくべ" {
+	if title != "kbkb" {
 		panic(fmt.Sprintf("unexpected page title %q — is the UI reachable from the container?", title))
 	}
 
